@@ -1,0 +1,74 @@
+schema_version: 1
+
+context:
+  name: Ipopt
+  version: "3.14.20"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/coin-or/Ipopt/archive/releases/${{ version }}.tar.gz
+    sha256: 43bddd6fa793b1694aa94d6129fe3e4a8d452d97a84ef5f2ff721c8047c75605
+    patches:
+      - pkg-config-do-not-add-requires-private.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - if: unix
+      then: gnuconfig
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+    - if: win
+      then: autotools_clang_conda
+    - if: not win
+      then: make
+    # build.sh doesn't use wget, and it isn't available on linux-riscv64
+    - if: not win and not riscv64
+      then: wget
+    - pkg-config
+  host:
+    - libblas
+    - liblapack
+    - mumps-seq
+    - if: linux
+      then: libspral
+    - ampl-asl
+  run_exports:
+    - ${{ pin_subpackage('ipopt', upper_bound='x.x.x') }}
+
+tests:
+  - files:
+      recipe:
+        - test
+        - mytoy.nl
+        - run_test.sh
+        - run_test.bat
+    requirements:
+      run:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - pkg-config
+    script:
+      - if: unix
+        then: bash run_test.sh
+        else: call run_test.bat
+
+about:
+  license: EPL-1.0
+  license_file: LICENSE
+  summary: Software package for large-scale nonlinear optimization
+  homepage: https://projects.coin-or.org/Ipopt/
+
+extra:
+  recipe-maintainers:
+    - pstjohn
+    - bluescarni
+    - jschueller
+    - moorepants
+    - traversaro
